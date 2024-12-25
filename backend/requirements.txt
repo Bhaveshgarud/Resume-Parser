@@ -1,0 +1,12 @@
+fastapi>=0.68.0
+uvicorn>=0.15.0
+python-multipart>=0.0.5
+pydantic
+pydantic-settings>=2.0.0
+requests>=2.31.0
+PyMuPDF>=1.23.0
+spacy>=3.0.0,<4.0.0
+python-jose[cryptography]>=3.3.0  # For JWT handling if needed
+passlib[bcrypt]>=1.7.4  # For password hashing if needed
+aiofiles>=0.8.0  # For async file operations
+typing-extensions>=4.0.0  # For advanced type hints 

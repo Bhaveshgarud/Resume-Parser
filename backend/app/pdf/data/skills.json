@@ -1,0 +1,34 @@
+{
+    "technical": [
+        "python",
+        "javascript",
+        "java",
+        "c++",
+        "sql",
+        "react",
+        "node.js",
+        "docker",
+        "kubernetes"
+    ],
+    "soft": [
+        "leadership",
+        "communication",
+        "teamwork",
+        "problem solving",
+        "time management"
+    ],
+    "languages": [
+        "english",
+        "spanish",
+        "french",
+        "mandarin",
+        "hindi"
+    ],
+    "tools": [
+        "git",
+        "jira",
+        "vs code",
+        "photoshop",
+        "figma"
+    ]
+}
