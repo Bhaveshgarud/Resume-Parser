@@ -45,8 +45,8 @@ class PDFParser:
                 r'(?i)(?:pursuing|completed)\s+([^,\n]+(?:Engineering|Technology))',
             ],
             'projects': [
-                r'(?i)PROJECTS\s*(?:\n|\r\n)(.*?)(?=\n\s*(?:[A-Z][A-Z\s]+|$))',
-                r'(?i)(?:^|\n)([^•\n]+)\s*(?:React\.js|HTML|CSS|JavaScript)[^\n]+',
+                r'(?i)(?:Projects?|Major\s+Projects?)\s*(?:\n|:)((?:.*?(?:\([^)]*\)|Live).*?(?:•[^\n]+\n?)*)+)',
+                r'(?i)(?:^|\n)(?!.*?experience).*?\([^)]*\).*?(?:•[^\n]+\n?)+',
             ],
             'education': [
                 r'(?i)B\.?E\.?\s*(?:\([^)]+\))',
@@ -79,10 +79,17 @@ class PDFParser:
         # Clean the text
         all_text = self._clean_text(all_text)
         
+        # Debug print
+        print("Cleaned text:")
+        print("=" * 50)
+        print(all_text)
+        print("=" * 50)
+        
         # Process each field type
         for field_type, patterns in self.field_patterns.items():
             value = self._extract_field_value(all_text, field_type, patterns)
             if value:
+                print(f"Found {field_type}: {value}")
                 fields.append(FormField(
                     name=field_type,
                     type=field_type,
@@ -109,34 +116,42 @@ class PDFParser:
         for pattern in patterns:
             matches = list(re.finditer(pattern, text, re.MULTILINE | re.IGNORECASE))
             for match in matches:
-                value = match.group(1) if match.groups() else match.group(0)
-                value = value.strip()
-                
-                if field_type == 'skills':
-                    skills = [s.strip() for s in re.split(r'[,\n]', value)]
-                    values.extend(filter(None, skills))
-                elif field_type == 'college_name':
-                    value = re.sub(r'(?i)\s+(?:in|of|and)\s+.*$', '', value)
-                    value = re.sub(r'\s+', ' ', value)
-                    if re.search(r'(?i)(?:College|Polytechnic|Institute|University)', value):
-                        values.append(value)
-                elif field_type == 'course_name':
-                    value = re.sub(r'(?i)^(?:B\.?E\.?\s+in\s+|Diploma\s+in\s+)', '', value)
-                    value = re.sub(r'\s+', ' ', value)
-                    values.append(value)
-                elif field_type == 'projects':
-                    value = re.sub(r'(?i)PROJECTS\s*', '', value)
-                    value = re.sub(r'\s+', ' ', value)
-                    projects = re.split(r'(?:\n|•)', value)
-                    values.extend(p.strip() for p in projects if p.strip())
-                elif field_type == 'location':
-                    value = re.sub(r'(?i)(?:address|location|city):\s*', '', value)
-                    value = re.sub(r'\s+', ' ', value)
-                    parts = [p.strip() for p in value.split(',')]
-                    if parts and re.match(r'^[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*$', parts[0]):
-                        values.append(parts[0])
+                if field_type == 'projects':
+                    project_text = match.group(1) if match.groups() else match.group(0)
+                    # Split into individual projects and clean them
+                    projects = []
+                    current_project = []
+                    
+                    for line in project_text.split('\n'):
+                        line = line.strip()
+                        if not line:
+                            continue
+                            
+                        # Check if this is a new project title
+                        if '(' in line and ')' in line:
+                            if current_project:
+                                projects.append(' '.join(current_project))
+                            current_project = [line]
+                        elif line.startswith('•'):
+                            current_project.append(line.lstrip('• '))
+                            
+                    if current_project:
+                        projects.append(' '.join(current_project))
+                        
+                    # Format each project as "Title: Details"
+                    formatted_projects = []
+                    for project in projects:
+                        parts = project.split(')', 1)
+                        if len(parts) == 2:
+                            title = parts[0] + ')'
+                            details = parts[1].strip()
+                            formatted_projects.append(f"{title}: {details}")
+                            
+                    if formatted_projects:
+                        values.extend(formatted_projects)
                 else:
-                    values.append(value)
+                    value = match.group(1) if match.groups() else match.group(0)
+                    values.append(value.strip())
 
         if not values:
             return None
@@ -144,7 +159,7 @@ class PDFParser:
         if field_type == 'skills':
             return ', '.join(sorted(set(values)))
         elif field_type == 'projects':
-            return ' | '.join(values)
+            return ' • '.join(values)
         elif field_type in ['college_name', 'course_name']:
             return max(values, key=len) if values else None
         else:
